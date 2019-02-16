@@ -92,6 +92,18 @@ module.exports = function(title, beforeFn, afterFn, storeConf) {
       })
     })
 
+    describe('destroyAll()', function() {
+      it('delets all records with calling beforeDestroy or afterDestroy', function() {
+        return store
+          .ready(function() {
+            var Thread = store.Model('Thread')
+
+            return Thread.where({ title_like: 'destroy' }).destroyAll()
+          })
+          .should.be.rejectedWith(Error, { message: 'stop from thread before' })
+      })
+    })
+
     describe('deleteAll()', function() {
       it('delets all records without calling beforeDestroy or afterDestroy', function() {
         return store.ready(function() {
@@ -125,19 +137,41 @@ module.exports = function(title, beforeFn, afterFn, storeConf) {
             .then(function(result) {
               result.should.be.equal(0)
             })
+        })        
+      })
+
+
+      it('delete multiple records with limit() and offset()', function() {
+        if (title === 'SQL (MySQL)') return Promise.resolve() // not supported in mysql <= 8.0
+        return store.ready(function() {
+          var Thread = store.Model('Thread')
+          var count
+          return Thread.count()
+          .then(function(_count){
+            count = _count
+            return Thread.limit(2).deleteAll()
+          })          
+          .then(function(){
+            return Thread.count()
+          })
+          .then(function(_count){
+            _count.should.be.equal(count - 2)
+          })
         })
       })
-    })
 
-    describe('destroyAll()', function() {
-      it('delets all records with calling beforeDestroy or afterDestroy', function() {
-        return store
-          .ready(function() {
-            var Thread = store.Model('Thread')
 
-            return Thread.where({ title_like: 'destroy' }).destroyAll()
+      it('deletes all records', function() {
+        return store.ready(function() {
+          var Thread = store.Model('Thread')
+          return Thread.deleteAll()        
+          .then(function(){
+            return Thread.count()
           })
-          .should.be.rejectedWith(Error, { message: 'stop from thread before' })
+          .then(function(_count){
+            _count.should.be.equal(0)
+          })
+        })
       })
     })
   })
